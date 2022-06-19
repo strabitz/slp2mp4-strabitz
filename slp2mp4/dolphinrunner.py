@@ -175,7 +175,10 @@ class DolphinRunner:
 
             ini_parser.optionxform = str
             ini_parser.read(ini_path)
+            sections = ini_parser.sections()
             for section, opts in opt_dict.items():
+                if section  not in sections:
+                    ini_parser.add_section(section)
                 for opt_tuple in opts:
                     ini_parser.set(section, *opt_tuple)
 
