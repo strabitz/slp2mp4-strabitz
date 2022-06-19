@@ -157,11 +157,14 @@ class DolphinRunner:
 
             # kinda hack to figure out what option format we need for widescreen
             # it's this for older versions of slippi:
+            gale01r2_ini_path = os.path.join(self.conf.dolphin_dir, "Sys", "GameSettings", "GALE01r2.ini")
             widescreen_code = '$Widescreen 16:9'
-            with open(gale01_ini_path, 'r') as f:
-                # it's this for newer (since rollback? idk, tell me if this breaks)
-                if '$Required: Slippi Playback' in f.read():
-                    widescreen_code = '$Optional: Widescreen 16:9'
+            for fn in [gale01_ini_path, gale01r2_ini_path]:
+                with open(fn, 'r') as f:
+                    # it's this for newer (since rollback? idk, tell me if this breaks)
+                    # Update: it seems to have broken - fixed below
+                    if '$Required: Slippi Playback' in f.read():
+                        widescreen_code = '$Optional: Widescreen 16:9'
 
             ini_settings[gale01_ini_path] = {
                 'Gecko_Enabled': [
