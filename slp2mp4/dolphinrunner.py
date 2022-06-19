@@ -152,25 +152,33 @@ class DolphinRunner:
         if sys.platform == "win32":
             ini_settings[dolphin_ini_path]['Display'].append(('RenderToMain', "True"))
 
+        # kinda hack to figure out what option format we need for widescreen
+        # it's this for older versions of slippi:
+        gale01r2_ini_path = os.path.join(self.conf.dolphin_dir, "Sys", "GameSettings", "GALE01r2.ini")
+        widescreen_code = '$Widescreen 16:9'
+        for fn in [gale01_ini_path, gale01r2_ini_path]:
+            with open(fn, 'r') as f:
+                # it's this for newer (since rollback? idk, tell me if this breaks)
+                # Update: it seems to have broken - fixed below
+                if '$Required: Slippi Playback' in f.read():
+                    widescreen_code = '$Optional: Widescreen 16:9'
+
+        # Enable/disable widescreen
         if self.conf.widescreen:
             ini_settings[gfx_ini_path]['Settings'].append(('AspectRatio', "6"))
-
-            # kinda hack to figure out what option format we need for widescreen
-            # it's this for older versions of slippi:
-            gale01r2_ini_path = os.path.join(self.conf.dolphin_dir, "Sys", "GameSettings", "GALE01r2.ini")
-            widescreen_code = '$Widescreen 16:9'
-            for fn in [gale01_ini_path, gale01r2_ini_path]:
-                with open(fn, 'r') as f:
-                    # it's this for newer (since rollback? idk, tell me if this breaks)
-                    # Update: it seems to have broken - fixed below
-                    if '$Required: Slippi Playback' in f.read():
-                        widescreen_code = '$Optional: Widescreen 16:9'
-
             ini_settings[gale01_ini_path] = {
                 'Gecko_Enabled': [
                     (widescreen_code,)
                 ]
             }
+        else:
+            ini_settings[gfx_ini_path]['Settings'].append(('AspectRatio', "0"))
+            ini_settings[gale01_ini_path] = {
+                'Gecko_Disabled': [
+                    (widescreen_code,)
+                ]
+            }
+
 
         for ini_path, opt_dict in ini_settings.items():
             # need these args to ensure Gecko_Enabled options (GALE01.ini) are parsed correctly
