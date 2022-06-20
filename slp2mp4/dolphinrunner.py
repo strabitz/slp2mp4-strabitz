@@ -1,4 +1,5 @@
 import os, sys, subprocess, time, shutil, uuid, json, configparser
+import glob
 
 MAX_WAIT_SECONDS = 8 * 60 + 30
 RESOLUTION_DICT = {'480p': '2', '720p': '3', '1080p': '5', '1440p': '6', '2160p': '8'}
@@ -35,10 +36,8 @@ class DolphinRunner:
         # Get all needed paths
         self.comm_file = os.path.join(working_dir, 'slippi-comm-{}.txt'.format(self.job_id))
         self.render_time_file = os.path.join(self.user_dir, 'Logs', 'render_time.txt')
-        self.frames_dir = os.path.join(self.user_dump_dir, 'Frames')
-        self.audio_dir = os.path.join(self.user_dump_dir,'Audio')
-        self.video_file0 = os.path.join(self.frames_dir, 'framedump0.avi')
-        self.video_file1 = os.path.join(self.frames_dir, 'framedump1.avi')
+        self.frames_dir = os.path.join(self.paths.user_dump_dir, 'Frames')
+        self.audio_dir = os.path.join(self.paths.user_dump_dir, 'Audio')
         self.audio_file = os.path.join(self.audio_dir, 'dspdump.wav')
         self.ffmpeg = conf.ffmpeg
 
@@ -215,15 +214,17 @@ class DolphinRunner:
         if not os.path.exists(self.audio_file):
             raise RuntimeError("Audio dump missing!")
 
-        if not os.path.exists(self.video_file1):
-            if not os.path.exists(self.video_file0):
-                raise RuntimeError("Frame dump missing!")
-            video_file = self.video_file0
-        else:
-            video_file = self.video_file1
-        audio_file = self.audio_file
+        # Sort framedumps by last modified time, then merge
+        # Using glob because it gives full relative directory
+        framedumps = glob.glob(os.path.join(self.frames_dir, '*'))
+        framedumps.sort(key=os.path.getmtime)
 
-        return video_file, audio_file
+        # Merges avi files
+        ffmpeg_pat = 'concat:' + '|'.join(framedumps)
+        video_file = os.path.join(self.frames_dir, 'framedump.avi')
+        subprocess.run([self.ffmpeg, '-i', ffmpeg_pat, '-c', 'copy', video_file])
+
+        return video_file, self.audio_file
 
     def run(self, slp_file, num_frames):
         """
