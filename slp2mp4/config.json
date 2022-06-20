@@ -1,7 +1,7 @@
 {
-    "melee_iso": "~/Games/SSBM-v1.02-NTSC.iso",
-    "dolphin_dir": "~/dolphin/Slippi-FM-r18/playback",
-    "ffmpeg": "/usr/bin/ffmpeg",
+    "melee_iso": "~/Games/Super Smash Bros. Melee (USA) (En,Ja) (Rev 2).iso",
+    "dolphin_dir": "~/.config/",
+    "ffmpeg": "ffmpeg",
     "resolution": "720p",
     "widescreen": true,
     "bitrateKbps": 16000,
