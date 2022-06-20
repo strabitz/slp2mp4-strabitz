@@ -73,9 +73,7 @@ def record_file_slp(slp_file, outfile):
         print("Warning: Game is less than 30 seconds and won't be recorded. Override in config.")
         return
 
-    DOLPHIN_USER_DIR = os.path.join(conf.dolphin_dir, 'User')
-    # Dump frames
-    with DolphinRunner(conf, DOLPHIN_USER_DIR, SCRIPT_DIR, uuid.uuid4()) as dolphin_runner:
+    with DolphinRunner(conf, conf.paths, SCRIPT_DIR, uuid.uuid4()) as dolphin_runner:
         video_file, audio_file = dolphin_runner.run(slp_file, num_frames)
 
         # Encode

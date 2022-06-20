@@ -25,25 +25,26 @@ class CommFile:
 
 class DolphinRunner:
 
-    def __init__(self, conf, base_user_dir, working_dir, job_id):
+    def __init__(self, conf, paths, working_dir, job_id):
         self.conf = conf
         self.job_id = job_id
-        self.base_user_dir = base_user_dir
+        self.paths = paths
         self.user_dir = os.path.join(working_dir, 'User-{}'.format(job_id))
+        self.paths.user_dir = self.user_dir
 
         # Get all needed paths
         self.comm_file = os.path.join(working_dir, 'slippi-comm-{}.txt'.format(self.job_id))
         self.render_time_file = os.path.join(self.user_dir, 'Logs', 'render_time.txt')
-        self.dump_dir = os.path.join(self.user_dir, 'Dump')
-        self.frames_dir = os.path.join(self.dump_dir, 'Frames')
-        self.audio_dir = os.path.join(self.dump_dir,'Audio')
+        self.frames_dir = os.path.join(self.user_dump_dir, 'Frames')
+        self.audio_dir = os.path.join(self.user_dump_dir,'Audio')
         self.video_file0 = os.path.join(self.frames_dir, 'framedump0.avi')
         self.video_file1 = os.path.join(self.frames_dir, 'framedump1.avi')
         self.audio_file = os.path.join(self.audio_dir, 'dspdump.wav')
+        self.ffmpeg = conf.ffmpeg
 
     def __enter__(self):
         # Create a new user dir for this job
-        shutil.copytree(self.base_user_dir, self.user_dir)
+        self.paths.copy_inis()
         return self
 
     def __exit__(self, type, value, tb):
@@ -89,13 +90,9 @@ class DolphinRunner:
         else:
             efb_scale = RESOLUTION_DICT[self.conf.resolution]
 
-        gfx_ini_path = os.path.join(self.user_dir, "Config", "GFX.ini")
-        dolphin_ini_path = os.path.join(self.user_dir, "Config", "Dolphin.ini")
-        gale01_ini_path = os.path.join(self.user_dir, "GameSettings", "GALE01.ini")
-
         # TODO make more of these options adjustable in config.json
         ini_settings = {
-            gfx_ini_path: {
+            self.paths.user_gfx_ini: {
                 'Settings': [
                     ('EFBScale', efb_scale),
 
@@ -114,7 +111,7 @@ class DolphinRunner:
                     ('CompileShaderOnStartup', 'True')
                 ]
             },
-            dolphin_ini_path: {
+            self.paths.user_dolphin_ini: {
                 'Interface': [
                     # doesn't render properly with these enabled
                     ('ShowToolbar', 'False'),
@@ -150,13 +147,12 @@ class DolphinRunner:
 
         # If using windows, run all of dolphin in the main window to keep the display cleaner. This breaks in Linux.
         if sys.platform == "win32":
-            ini_settings[dolphin_ini_path]['Display'].append(('RenderToMain', "True"))
+            ini_settings[self.paths.dolphin_ini]['Display'].append(('RenderToMain', "True"))
 
         # kinda hack to figure out what option format we need for widescreen
         # it's this for older versions of slippi:
-        gale01r2_ini_path = os.path.join(self.conf.dolphin_dir, "Sys", "GameSettings", "GALE01r2.ini")
         widescreen_code = '$Widescreen 16:9'
-        for fn in [gale01_ini_path, gale01r2_ini_path]:
+        for fn in [self.paths.user_gale01_ini, self.paths.gale01r2_ini]:
             with open(fn, 'r') as f:
                 # it's this for newer (since rollback? idk, tell me if this breaks)
                 # Update: it seems to have broken - fixed below
@@ -165,15 +161,15 @@ class DolphinRunner:
 
         # Enable/disable widescreen
         if self.conf.widescreen:
-            ini_settings[gfx_ini_path]['Settings'].append(('AspectRatio', "6"))
-            ini_settings[gale01_ini_path] = {
+            ini_settings[self.paths.user_gfx_ini]['Settings'].append(('AspectRatio', "6"))
+            ini_settings[self.paths.user_gale01_ini] = {
                 'Gecko_Enabled': [
                     (widescreen_code,)
                 ]
             }
         else:
-            ini_settings[gfx_ini_path]['Settings'].append(('AspectRatio', "0"))
-            ini_settings[gale01_ini_path] = {
+            ini_settings[self.paths.user_gfx_ini]['Settings'].append(('AspectRatio', "0"))
+            ini_settings[self.paths.user_gale01_ini] = {
                 'Gecko_Disabled': [
                     (widescreen_code,)
                 ]
@@ -203,8 +199,8 @@ class DolphinRunner:
             os.remove(self.render_time_file)
 
         # Remove existing dump files
-        if os.path.exists(self.dump_dir):
-            shutil.rmtree(self.dump_dir, ignore_errors=True)
+        if os.path.exists(self.paths.user_dump_dir):
+            shutil.rmtree(self.paths.user_dump_dir, ignore_errors=True)
 
         # We have to create 'Frames' and 'Audio' because reasons
         # See Dolphin source: Source/Core/VideoCommon/AVIDump.cpp:AVIDump:CreateVideoFile() - it doesn't create the thing
