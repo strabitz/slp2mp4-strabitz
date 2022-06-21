@@ -134,7 +134,7 @@ def record_folder_slp(slp_folder, conf):
         for file in files:
             if file.endswith('.slp'):
                 in_files.append([subdir, file])
-                out_files.append([os.path.basename(subdir), str(file.split('.')[:-1][0]) + '.mp4'])
+                out_files.append([os.path.basename(subdir), str('.'.join(file.split('.')[:-1])) + '.mp4'])
 
     if len(out_files) == 0:
         RuntimeError("No slp files in folder!")
