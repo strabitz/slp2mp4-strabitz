@@ -106,6 +106,7 @@ def combine(conf):
                     pass
 
             # Write lines to the concat_file
+            lines.sort()
             concat_file.writelines(lines)
 
         # If there is 1 or more mp4 file and not overwriting an existing file
