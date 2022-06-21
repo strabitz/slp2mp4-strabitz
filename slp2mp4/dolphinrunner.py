@@ -146,7 +146,7 @@ class DolphinRunner:
 
         # If using windows, run all of dolphin in the main window to keep the display cleaner. This breaks in Linux.
         if sys.platform == "win32":
-            ini_settings[self.paths.dolphin_ini]['Display'].append(('RenderToMain', "True"))
+            ini_settings[self.paths.user_dolphin_ini]['Display'].append(('RenderToMain', "True"))
 
         # kinda hack to figure out what option format we need for widescreen
         # it's this for older versions of slippi:

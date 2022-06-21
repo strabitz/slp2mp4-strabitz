@@ -43,7 +43,7 @@ class Paths:
 
     def copy_inis(self):
         if self._windows:
-            shutil.copytree(os.path.join(self._dolphin_dir, 'User', self.user_dir))
+            shutil.copytree(os.path.join(self._dolphin_dir, 'User'), self.user_dir)
         else:
             paths = [pathlib.Path(p).parent for p in [
                 self.user_gale01_ini,
