@@ -1,7 +1,6 @@
 import os, sys, subprocess, time, shutil, uuid, json, configparser
 import glob
 
-MAX_WAIT_SECONDS = 8 * 60 + 30
 RESOLUTION_DICT = {'480p': '2', '720p': '3', '1080p': '5', '1440p': '6', '2160p': '8'}
 
 class CommFile:
@@ -251,17 +250,16 @@ class DolphinRunner:
             proc_dolphin = subprocess.Popen(args=cmd)
 
             # Poll file until done
-            start_timer = time.perf_counter()
+            # Detect "freezing" (arbitrarily set to be not making progress in 5
+            # seconds)
+            last_frames = []
             while self.count_frames_completed() < num_frames:
-
-                if time.perf_counter() - start_timer > MAX_WAIT_SECONDS:
-                    print("WARNING: Timed out waiting for render")
-                    break
-
-                if proc_dolphin.poll() is not None:
-                    print("WARNING: Dolphin exited before replay finished - may not have recorded entire replay")
-                    break
-
+                last_frames.append(self.count_frames_completed())
+                if (len(last_frames) > 5):
+                    last_frames = last_frames[1:]
+                    if len(set(last_frames)) == 1:
+                        print('WARNING: Timed out waiting for render')
+                        break
                 time.sleep(1)
 
             # Kill dolphin
