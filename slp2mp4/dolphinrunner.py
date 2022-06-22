@@ -240,10 +240,11 @@ class DolphinRunner:
             # Construct command string and run dolphin
             cmd = [
                 self.conf.dolphin_bin,
-                '-i', self.comm_file,       # The comm file tells dolphin which slippi file to play (see above)
-                '-b',                       # Exit dolphin when emulation ends
-                '-e', self.conf.melee_iso,  # ISO to use
-                '-u', self.user_dir         # specify User dir
+                '-i', self.comm_file,          # The comm file tells dolphin which slippi file to play (see above)
+                '-b',                          # Exit dolphin when emulation ends
+                '-e', self.conf.melee_iso,     # ISO to use
+                '-u', self.user_dir,           # specify User dir
+                '-v', self.conf.video_backend, # Specify graphics backend
                 ]
             print(' '.join(cmd))
             # TODO run faster than realtime if possible

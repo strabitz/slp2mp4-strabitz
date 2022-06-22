@@ -15,6 +15,7 @@ class Config:
             self.ffmpeg = os.path.expanduser(shutil.which(j['ffmpeg']))
             self.check_path(self.ffmpeg)
             self.resolution = j['resolution']
+            self.video_backend = j['video_backend']
             self.widescreen = j['widescreen']
             self.bitrateKbps = j['bitrateKbps']
             self.parallel_games = j['parallel_games']

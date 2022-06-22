@@ -89,6 +89,7 @@ For linux, the configuration file is config.json. For Windows, the file is confi
   - 1080p
   - 1440p
   - 2160p
+- 'video\_backend' is the graphics backend you want to use. Currently, this can either be `"OGL"` for OpenGL, or `"D3D"` for Direct3D (Windows only). OpenGL is the default, as Direct3D can give strange cropping results when dumping in non-widescreen mode. Plus, it tends to be faster and gives fewer visual artifacts.
 - 'widescreen' can be true or false. Enabling will set the resolution to 16:9
 - 'bitrateKbps' must be a number. It selects the bitrate in Kilobits per second that dolphin records at.
 - 'parallel_games' must be a number greater than 0 or "recommended". This is the maximum number of games that will run at the same time. "recommended" will select the number of physical cores in the CPU.
