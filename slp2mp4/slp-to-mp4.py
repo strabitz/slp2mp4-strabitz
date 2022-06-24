@@ -41,9 +41,6 @@ else:
 OUT_DIR = os.path.join(SCRIPT_DIR, 'out')
 
 
-combined_files = []
-
-
 def is_game_too_short(num_frames, remove_short):
     return num_frames < MIN_GAME_LENGTH and remove_short
 
@@ -83,93 +80,74 @@ def record_file_slp(slp_file, outfile):
         print('Created {}'.format(outfile))
 
 
-# In the out folder, run through each subdirectory and count the number of mp4 files. Add these files to
-# concat_file.txt. ffmpeg uses this to combine the mp4 files.
-def combine(conf):
-    for subdir, dirs, files in os.walk(OUT_DIR, topdown=False):
-        basedir = os.path.basename(subdir)
-        if os.path.exists(os.path.join(subdir, 'concat_file.txt')):
-            os.remove(os.path.join(subdir, 'concat_file.txt'))
-        file_count = 0
-        with open(os.path.join(subdir, 'concat_file.txt'), 'w+') as concat_file:
-            lines = []
+# Given a list of mp4s, does the basic prep and cleanup work for ffmpeg runner
+def combine(mp4s, conf):
+    # TODO: Worry about escaping filenames?
+    # Creates concat file
+    outdir = os.path.dirname(mp4s[0])
+    basedir = os.path.basename(outdir)
+    concat_file = os.path.join(outdir, 'concat_file.txt')
+    final_mp4_file = os.path.join(OUT_DIR, basedir + '.mp4')
+    with open(concat_file, 'w') as file:
+        for mp4 in mp4s:
+            file.write(f"file '{mp4}'\n")
 
-            # Count the number of MP4 files that weren't written using the combine function
-            for file in files:
-                try:
-                    if file.endswith('.mp4') and os.path.join(subdir, file) not in combined_files:
-                        file_count = file_count + 1
+    # Combines files
+    ffmpeg_runner = FfmpegRunner(conf.ffmpeg)
+    ffmpeg_runner.combine(concat_file, final_mp4_file)
 
-                        # Append to lines
-                        lines.append("file \'" + os.path.join(subdir, file) + "\'" + "\n")
-                except Exception:
-                    pass
-
-            # Write lines to the concat_file
-            lines.sort()
-            concat_file.writelines(lines)
-
-        # If there is 1 or more mp4 file and not overwriting an existing file
-        if file_count > 0 and not os.path.exists(os.path.join(OUT_DIR, basedir) + '.mp4'):
-            ffmpeg_runner = FfmpegRunner(conf.ffmpeg)
-            ffmpeg_runner.combine(os.path.join(subdir, 'concat_file.txt'), os.path.join(OUT_DIR, basedir) + '.mp4')
-            combined_files.append(os.path.join(OUT_DIR, basedir) + '.mp4')
-
-            # Remove subdirectory after combined
-            if os.path.exists(os.path.join(OUT_DIR, basedir)) and os.path.exists(os.path.join(OUT_DIR, basedir) + '.mp4'):
-                shutil.rmtree(os.path.join(OUT_DIR, basedir))
-        if os.path.exists(os.path.join(subdir, 'concat_file.txt')):
-            os.remove(os.path.join(subdir, 'concat_file.txt'))
+    # Cleanup
+    shutil.rmtree(outdir)
 
 
 # Get a list of the input files and their subdirectories to prepare the output files. Feed this to record_file_slp.
 # If combine is true, combine the files in the out folder every time there is a new subdirectory.
 def record_folder_slp(slp_folder, conf):
-    in_files = []
-    out_files = []
+    slps_to_record = []
+    mp4s_to_combine = {}
 
     # Get a list of the input files and their subdirectories. The output file will use the basename of the subdirectory
     # and the name of the file without the extension
     for subdir, dirs, files in os.walk(slp_folder):
         for file in files:
             if file.endswith('.slp'):
-                in_files.append([subdir, file])
-                out_files.append([os.path.basename(subdir), str('.'.join(file.split('.')[:-1])) + '.mp4'])
+                slp_name = os.path.join(subdir, file)
+                out_dir = os.path.join(OUT_DIR, os.path.basename(subdir))
+                mp4_name = os.path.join(
+                    out_dir,
+                    '.'.join(file.split('.')[:-1]) + '.mp4'
+                )
 
-    if len(out_files) == 0:
-        RuntimeError("No slp files in folder!")
-    last_dir = out_files[0][0]
-    args = []
-    for index, in_file in enumerate(in_files):
+                # Skips mp4s that already exist
+                # TODO: Should this be part of record_file_slip instead?
+                if os.path.exists(mp4_name):
+                    print(f'mp4 for {file} already exists - skipping')
+                    continue
 
-        # Combine last subdirectory on discovery of a new subdirectory
-        if out_files[index][0] != last_dir:
-            if conf.combine:
-                #combine(conf)
-                # TODO: Find a way to fix combining folders while still multiprocessing
-                pass
-            last_dir = out_files[index][0]
+                slps_to_record.append((slp_name, mp4_name))
 
-        # Make the needed directory in the output
-        if not os.path.isdir(os.path.join(OUT_DIR, out_files[index][0])):
-            os.makedirs(os.path.join(OUT_DIR, out_files[index][0]))
+                # Makes the needed directory in the output if needed
+                if not os.path.isdir(out_dir):
+                    os.makedirs(out_dir)
 
-        # Record the single slp file
-        slp_file = os.path.join(in_file[0], in_file[1])
-        out_file = os.path.join(OUT_DIR, out_files[index][0], out_files[index][1])
-        if not os.path.exists(out_file):
-            args.append((slp_file, out_file))
+                if conf.combine:
+                    if subdir not in mp4s_to_combine:
+                        mp4s_to_combine[subdir] = []
+                    mp4s_to_combine[subdir].append(mp4_name)
 
+    if len(slps_to_record) == 0:
+        RuntimeError('No slp files in folder!')
+
+    # Start recording
     num_processes = get_num_processes(conf)
-
     pool = multiprocessing.Pool(processes=num_processes)
-    pool.starmap(record_file_slp, args)
+    pool.starmap(record_file_slp, slps_to_record)
     pool.close()
 
-    # Combine one last time
-    if conf.combine:
-        combine(conf)
-
+    # Combines mp4s
+    for mp4s in mp4s_to_combine.values():
+        mp4s.sort()
+        combine(mp4s, conf)
 
 def main():
 
