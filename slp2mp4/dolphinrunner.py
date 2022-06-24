@@ -251,16 +251,12 @@ class DolphinRunner:
             proc_dolphin = subprocess.Popen(args=cmd)
 
             # Poll file until done
-            # Detect "freezing" (arbitrarily set to be not making progress in 5
-            # seconds)
-            last_frames = []
+            # Since the Slippi doesn't quit on the "waiting for game" screen,
+            # we need to poll to detect that we've finished
             while self.count_frames_completed() < num_frames:
-                last_frames.append(self.count_frames_completed())
-                if (len(last_frames) > 5):
-                    last_frames = last_frames[1:]
-                    if len(set(last_frames)) == 1:
-                        print('WARNING: Timed out waiting for render')
-                        break
+                # Check if process has been killed early
+                if proc_dolphin.poll() is not None:
+                    break
                 time.sleep(1)
 
             # Kill dolphin
