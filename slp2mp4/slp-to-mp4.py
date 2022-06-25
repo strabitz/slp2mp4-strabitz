@@ -81,13 +81,15 @@ def record_file_slp(slp_file, outfile):
 
 
 # Given a list of mp4s, does the basic prep and cleanup work for ffmpeg runner
-def combine(mp4s, conf):
+# Names mp4 based on the directory (path/to/dir -> path-to-dir.mp4)
+def combine(mp4s, dir_name, conf):
     # TODO: Worry about escaping filenames?
     # Creates concat file
     outdir = os.path.dirname(mp4s[0])
-    basedir = os.path.basename(outdir)
+    mp4name = '-'.join(Path(dir_name).parts)
+
     concat_file = os.path.join(outdir, 'concat_file.txt')
-    final_mp4_file = os.path.join(OUT_DIR, basedir + '.mp4')
+    final_mp4_file = os.path.join(OUT_DIR, mp4name + '.mp4')
     with open(concat_file, 'w') as file:
         for mp4 in mp4s:
             file.write(f"file '{mp4}'\n")
@@ -145,9 +147,10 @@ def record_folder_slp(slp_folder, conf):
     pool.close()
 
     # Combines mp4s
-    for mp4s in mp4s_to_combine.values():
+    for subdir, mp4s in mp4s_to_combine.items():
         mp4s.sort()
-        combine(mp4s, conf)
+        dirname = os.path.relpath(os.path.join(slp_folder, subdir), slp_folder)
+        combine(mp4s, os.path.join(os.path.basename(slp_folder), dirname), conf)
 
 def main():
 
