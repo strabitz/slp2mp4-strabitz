@@ -10,6 +10,7 @@ FM-v*
 slippi-r18-playback*
 ffmpeg-*
 
+*.egg-info
 __pycache__
 
 # Unneeded User/ directories

@@ -6,7 +6,7 @@ from config import Config
 from dolphinrunner import DolphinRunner
 from ffmpegrunner import FfmpegRunner
 
-VERSION = '1.0.0'
+VERSION = '2.0.0'
 USAGE = """\
 slp-to-mp4 {}
 Convert slippi files to mp4 videos
