@@ -3,17 +3,17 @@ import shutil
 from paths import Paths
 
 class Config:
-    def __init__(self):
+    def __init__(self, check_paths=True):
         self.paths = Paths()
         with open(self.paths.config_json, 'r') as f:
             j = json.loads(f.read())
             self.melee_iso = os.path.expanduser(j['melee_iso'])
-            self.check_path(self.melee_iso)
             self.dolphin_dir = os.path.expanduser(j['dolphin_dir'])
             self.paths.dolphin_dir = self.dolphin_dir
-            self.check_path(self.dolphin_dir)
-            self.ffmpeg = os.path.expanduser(shutil.which(j['ffmpeg']))
-            self.check_path(self.ffmpeg)
+            try:
+                self.ffmpeg = os.path.expanduser(shutil.which(j['ffmpeg']))
+            except TypeError:
+                self.ffmpeg = None
             self.resolution = j['resolution']
             self.video_backend = j['video_backend']
             self.widescreen = j['widescreen']
@@ -23,8 +23,16 @@ class Config:
             self.combine = j['combine']
 
         self.dolphin_bin = self.paths.dolphin_bin
-        self.check_path(self.dolphin_bin)
 
-    def check_path(self, path):
+        # TODO: add more checking here
+        if check_paths:
+            self.check_path(self.melee_iso, 'Melee ISO')
+            self.check_path(self.dolphin_dir, 'Dolphin directory')
+            self.check_path(self.ffmpeg, 'ffmpeg')
+            self.check_path(self.dolphin_bin, 'Dolphin binary')
+
+    def check_path(self, path, name):
+        if path is None:
+            raise RuntimeError(f'Invalid config for {name}')
         if not os.path.exists(path):
-            raise RuntimeError("{} does not exist".format(path))
+            raise RuntimeError(f'{path} does not exist')

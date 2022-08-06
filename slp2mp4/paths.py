@@ -2,15 +2,12 @@ import sys
 import os
 import shutil
 import pathlib
+import importlib.resources
 
 class Paths:
     def __init__(self, dolphin_dir='', user_dir=''):
-        self._this_dir = os.path.split(os.path.abspath(__file__))[0]
         self._windows = sys.platform == 'win32'
-        if self._windows:
-            self.config_json = os.path.join(self._this_dir, 'config_windows.json')
-        else:
-            self.config_json = os.path.join(self._this_dir, 'config.json')
+        self.config_json = importlib.resources.files('data').joinpath('config.json')
         self.dolphin_dir = dolphin_dir
         self.user_dir = user_dir
 
