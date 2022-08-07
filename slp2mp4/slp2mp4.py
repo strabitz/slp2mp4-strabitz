@@ -81,7 +81,7 @@ def record_files(infiles, outdir, conf):
 
         # Directories get grouped/combined by level
         elif os.path.isdir(infile):
-            parent = Path(infile).parts[-1]
+            parent = Path(os.path.abspath(infile)).parts[-1]
             for subdir, _, fs in os.walk(infile):
                 cur_outdir = os.path.join(
                     outdir,
