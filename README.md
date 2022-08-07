@@ -178,7 +178,17 @@ physical cpu cores, but greater or fewer parallel games may be optimal.
 
 - Run Dolphin at higher emulation speed if possible
 
+- Improve config script experience
+
+	- Open file explorer / at least enable tab completion
+
+	- Change default playback dir for Linux to `~/.config/Slippi Launcher/playback`
+
+	- Don't overwrite config on update
+
 - GUI
+
+	- At least simple batch script people can drop files/folders onto
 
 [faster-melee]: https://www.smashladder.com/download/dolphin/18/Project+Slippi+%28r18%29
 [ffmpeg]: https://ffmpeg.org/download.html
