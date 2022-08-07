@@ -72,6 +72,7 @@ def get_mp4_name(slp):
 def record_files(infiles, outdir, conf):
     file_mappings = [] # [(slp, mp4, conf), ...]
     to_combine = []    # [([vid1, vid2], out), ...]
+    dirs = []
 
     # Determines groupings and output names
     for infile in infiles:
@@ -100,11 +101,13 @@ def record_files(infiles, outdir, conf):
                     cur_combine.append(mp4_name)
                 if len(cur_combine) == 0:
                     continue
+                dirs.append(cur_outdir)
                 os.makedirs(cur_outdir, exist_ok=True)
                 cur_combine = natsort.natsorted(cur_combine)
                 # Allow for parent name in case of same directory (Path strips .)
                 if Path(infile) == Path('.'):
                     idx = 0
+                    dirs.append(parent)
                 else:
                     idx = 1
                 final_mp4_name = '-'.join(Path(cur_outdir).parts[idx:]) + '.mp4'
@@ -122,11 +125,8 @@ def record_files(infiles, outdir, conf):
             combine(files[0], files[1], conf)
 
         # Cleans up intermediate mp4s - done after to prevent premature dir deletion
-        for files in to_combine:
-            shutil.rmtree(
-                os.path.join(*(Path(files[0][0]).parts[:-1])),
-                ignore_errors=True
-            )
+        for d in dirs:
+            shutil.rmtree(d, ignore_errors=True)
 
 ###############################################################################
 # Argument parsing
