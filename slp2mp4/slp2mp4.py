@@ -137,11 +137,13 @@ def config_script(_=None):
 
 def run(args):
     os.makedirs(args.output_directory, exist_ok=True)
-    try:
-        conf = Config()
-    except RuntimeError as e:
-        print(e, file=sys.stderr)
-        config_script()
+    while True:
+        try:
+            conf = Config()
+            break
+        except RuntimeError as e:
+            print(e, file=sys.stderr)
+            config_script()
     record_files(args.path, args.output_directory, conf)
 
 # Parser configuration
