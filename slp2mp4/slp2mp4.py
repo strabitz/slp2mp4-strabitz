@@ -63,10 +63,11 @@ def combine(mp4s, out, conf):
 
     os.unlink(tmp.name)
 
+def is_slp(slp):
+    return slp.endswith('.slp')
+
 def get_mp4_name(slp):
-    if slp.endswith('.slp'):
-        slp = '.'.join(os.path.splitext(slp)[:-1])
-    return slp + '.mp4'
+    return '.'.join(os.path.splitext(slp)[:-1]) + '.mp4'
 
 def record_files(infiles, outdir, conf):
     file_mappings = [] # [(slp, mp4, conf), ...]
@@ -76,6 +77,8 @@ def record_files(infiles, outdir, conf):
     for infile in infiles:
         # Individual files just become mp4s and don't get combined
         if os.path.isfile(infile):
+            if not is_slp(infile):
+                continue
             outfile = get_mp4_name(os.path.join(outdir, Path(infile).parts[-1]))
             file_mappings.append((infile, outfile, conf))
 
@@ -88,14 +91,23 @@ def record_files(infiles, outdir, conf):
                     parent,
                     os.path.relpath(subdir, infile)
                 )
-                os.makedirs(cur_outdir, exist_ok=True)
                 cur_combine = []
                 for f in fs:
+                    if not is_slp(f):
+                        continue
                     mp4_name = os.path.join(cur_outdir, get_mp4_name(f))
                     file_mappings.append((os.path.join(subdir, f), mp4_name, conf))
                     cur_combine.append(mp4_name)
+                if len(cur_combine) == 0:
+                    continue
+                os.makedirs(cur_outdir, exist_ok=True)
                 cur_combine = natsort.natsorted(cur_combine)
-                final_mp4_name = '-'.join(Path(cur_outdir).parts[1:]) + '.mp4'
+                # Allow for parent name in case of same directory (Path strips .)
+                if Path(infile) == Path('.'):
+                    idx = 0
+                else:
+                    idx = 1
+                final_mp4_name = '-'.join(Path(cur_outdir).parts[idx:]) + '.mp4'
                 to_combine.append((cur_combine, os.path.join(outdir, final_mp4_name)))
 
     # Records mp4s
