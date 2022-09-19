@@ -21,6 +21,7 @@ class Config:
             self.parallel_games = j['parallel_games']
             self.remove_short = j['remove_short']
             self.combine = j['combine']
+            self.remove_slps = j['remove_slps']
 
         self.dolphin_bin = self.paths.dolphin_bin
 

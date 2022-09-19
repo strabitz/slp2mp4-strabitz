@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-import os, sys, json, subprocess, time, shutil, uuid, multiprocessing, psutil, glob
+import os, sys, json, subprocess, time, shutil, uuid, multiprocessing, glob
 import argparse
 import tempfile
-import natsort
 from pathlib import Path
+from collections import namedtuple
+
 from slippi import Game
+import psutil
+import natsort
+
 from config import Config
 from dolphinrunner import DolphinRunner
 from ffmpegrunner import FfmpegRunner
@@ -24,6 +28,15 @@ def get_num_processes(conf):
         return psutil.cpu_count(logical=False)
     else:
         return int(conf.parallel_games)
+
+def safe_remove_file(f):
+    try:
+        os.remove(f)
+    except FileNotFoundError:
+        pass
+
+SlpMp4Obj = namedtuple('SlpMp4Obj', ['slp_file', 'outfile', 'conf'])
+ToCombineObj = namedtuple('ToCombineObj', ['vids', 'outname'])
 
 ###############################################################################
 # Run logic
@@ -45,6 +58,9 @@ def record_file_slp(slp_file, outfile, conf):
             # Encode
             ffmpeg_runner = FfmpegRunner(conf.ffmpeg)
             ffmpeg_runner.run(video_file, audio_file, outfile)
+
+            if conf.remove_slps:
+                safe_remove_file(slp_file)
 
             print('Created {}'.format(outfile))
 
@@ -70,10 +86,9 @@ def get_mp4_name(slp):
     return '.'.join(os.path.splitext(slp)[:-1]) + '.mp4'
 
 def record_files(infiles, outdir, conf):
-    file_mappings = [] # [(slp, mp4, conf), ...]
-    to_combine = []    # [([vid1, vid2], out), ...]
-    dirs_to_delete = []
-    files_to_delete = []
+    file_mappings = [] # [SlpMp4Obj, ...]
+    to_combine = []    # [ToCombineObj, ...]
+    created_dirs = []
 
     # Determines groupings and output names
     for infile in infiles:
@@ -82,7 +97,7 @@ def record_files(infiles, outdir, conf):
             if not is_slp(infile):
                 continue
             outfile = get_mp4_name(os.path.join(outdir, Path(infile).parts[-1]))
-            file_mappings.append((infile, outfile, conf))
+            file_mappings.append(SlpMp4Obj(infile, outfile, conf))
 
         # Directories get grouped/combined by level
         elif os.path.isdir(infile):
@@ -98,17 +113,16 @@ def record_files(infiles, outdir, conf):
                     if not is_slp(f):
                         continue
                     mp4_name = os.path.join(cur_outdir, get_mp4_name(f))
-                    file_mappings.append((os.path.join(subdir, f), mp4_name, conf))
+                    file_mappings.append(SlpMp4Obj(os.path.join(subdir, f), mp4_name, conf))
                     cur_combine.append(mp4_name)
 
-                    # Adds the slps in this directory to the list of files to be deleted
-                    if Path(infile) == Path('.'):
-                        files_to_delete.append(f)
-
+                # Skips empty directories
                 if len(cur_combine) == 0:
                     continue
-                dirs_to_delete.append(cur_outdir)
-                os.makedirs(cur_outdir, exist_ok=True)
+
+                if not Path(cur_outdir).is_dir():
+                    created_dirs.append(cur_outdir)
+                    os.makedirs(cur_outdir)
                 cur_combine = natsort.natsorted(cur_combine)
 
                 # Always give file some kind of meaningful name, at least
@@ -117,7 +131,7 @@ def record_files(infiles, outdir, conf):
                     idx = 0
 
                 final_mp4_name = '-'.join(Path(cur_outdir).parts[idx:]) + '.mp4'
-                to_combine.append((cur_combine, os.path.join(outdir, final_mp4_name)))
+                to_combine.append(ToCombineObj(cur_combine, os.path.join(outdir, final_mp4_name)))
 
     # Records mp4s
     num_processes = get_num_processes(conf)
@@ -128,15 +142,15 @@ def record_files(infiles, outdir, conf):
     # Combines mp4s
     if conf.combine:
         for files in to_combine:
-            combine(files[0], files[1], conf)
+            combine(files.vids, files.outname, conf)
 
-        # Cleans up intermediate mp4s - done after to prevent premature dir deletion
-        for d in dirs_to_delete:
+        # Removes created directories
+        for d in created_dirs:
             shutil.rmtree(d, ignore_errors=True)
 
-        # Cleans up additional files
-        for d in files_to_delete:
-            os.remove(d)
+        # Removes created files (if need be)
+        for _, mp4, _ in file_mappings:
+            safe_remove_file(mp4)
 
 ###############################################################################
 # Argument parsing

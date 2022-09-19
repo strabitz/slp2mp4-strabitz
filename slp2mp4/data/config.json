@@ -8,5 +8,6 @@
     "bitrateKbps": 16000,
     "parallel_games": "recommended",
     "remove_short": false,
-    "combine": true
+    "combine": true,
+    "remove_slps": false
 }
