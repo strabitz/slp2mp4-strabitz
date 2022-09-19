@@ -7,12 +7,13 @@ class FfmpegRunner:
     def combine(self, concat_file, outfile):
         cmd = [
             self.ffmpeg_bin,
-            '-safe', '0',
+            '-y',                       # Always overwrite without asking
+            '-safe', '0',               # Sane file names
             '-f', 'concat',             # Set input stream to concatenate
             '-i', concat_file,          # use a concatenation demuxer file which contains a list of files to combine
             '-c', 'copy',               # copy audio and video
             outfile
-            ]
+        ]
         print(' '.join(cmd))
         proc_ffmpeg = subprocess.Popen(args=cmd)
         proc_ffmpeg.wait()
@@ -31,7 +32,7 @@ class FfmpegRunner:
             '-c:a', 'mp3',          # convert audio encoding to mp3 for output
             '-c:v', 'copy',         # use the same encoding (avi) for video output
             outfile
-            ]
+        ]
         print(' '.join(cmd))
         proc_ffmpeg = subprocess.Popen(args=cmd)
         proc_ffmpeg.wait()
