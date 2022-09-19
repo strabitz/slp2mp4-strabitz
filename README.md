@@ -25,80 +25,81 @@ recording software.
 
 ## Setup
 
-Install the above dependencies to your machine.
+First, install [python]. Make sure you have at least Python 3.7 installed.
+While installing, be sure to check that `pip` should be installed as well, and
+that Python should be added to your environment variables.
 
-### Linux
+Now, in a command window, run the following command:
 
-Modify the paths in `config.json` to point to your Melee ISO, ffmpeg binary and
-the directory of the playback instance of Dolphin.
+```
+pip install git+https://github.com/davisdude/slp2mp4
+```
 
-### Windows
-
-Modify the paths in `config_windows.json` to point to your Melee ISO, ffmpeg
-binary and the directory of the playback instance of Dolphin.
+The same command can be used to update to the latest version at any time. Note
+that this will reset all settings.
 
 ## Usage
 
 ```
-slp2mp4 REPLAY_FILE [OUTPUT_FILE_OR_DIRECTORY]
-```
+usage: slp2mp4 run [-h] [-o dir] path [path ...]
 
-or
+positional arguments:
+  path                  Slippi files/directories containing slippi files to convert
 
-```
-slp2mp4 DIRECTORY_WITH_SLP_REPLAYS
+options:
+  -h, --help            show this help message and exit
+  -o dir, --output_directory dir
+                        Directory to put created mp4s
 ```
 
 This launches Dolphin, which plays the replay and dumps frames and audio. Then
 ffmpeg is invoked to combine audio and video.
 
----
-
-If recording one replay file with no output file specified, the video file with
-the same name will be placed in `slp2mp4/out`.
-
----
-
-If recording a directory and not combining, the individual games will be placed
-in a subfolder in `slp2mp4/out/` with the .slp parent folder's name. For
-example:
-
 ```
-Name_Of_Event/Game_1234.slp
-Name_Of_Event/Set_A/Game_1234.slp
-Name_Of_Event/Set_A/Game_1235.slp
+Event/
+      a.slp
+      b.slp
+      c.slp
+      Game_1/
+             d.slp
+             e.slp
+             f.slp
+      Game_2/
+             g.slp
+             h.slp
+             i.slp
 ```
 
 gives
 
 ```
-slp2mp4/out/Name_Of_Event/Game_1234.mp4
-slp2mp4/out/Set_A/Game_1234.mp4
-slp2mp4/out/Set_A/Game_1235.mp4
+./OUTDIR/Event.mp4
+./OUTDIR/Event-Game_1.mp4
+./OUTDIR/Event-Game_2.mp4
 ```
+
+Where `./` is the directory in which the command was run and `OUTDIR` is the
+(optional) prefix given if you want all videos to show up in a specific spot.
+Additionally, `Event.mp4` is made up of `a.slp`, `b.slp`, and `c.slp`,
+`Event-Game_1.mp4` is made up of `d.slp`, `e.slp`, and `f.slp`, and so on.
 
 ---
-
-If recording a directory and combining, one video will be created in
-slp2mp4/out/ for each subdirectory with the .slp parent folder's name. Example:
-
-```
-Name_Of_Event/Game_1234.slp
-Name_Of_Event/Set_A/Game_1234.slp
-Name_Of_Event/Set_A/Game_1235.slp
-```
-
-gives
-
-```
-slp2mp4/out/Name_Of_Event.mp4
-slp2mp4/out/Set_A.mp4
-```
 
 ## Configuration
 
-For linux, the configuration file is `config.json`. For Windows, the file is
-`config_windows.json`.
+To enter configuration mode, run
+
+```
+slp2mp4 config
+```
+
+**NOTE**: Unfortunately, you will need to redo the configuration each time you
+update.
+
+From here, you will see several fields (described below), which you can
+configure by entering text and hitting `enter`.
+
+There are several configuration options that you can control:
 
 - `'melee_iso'` is the path to your Super Smash Bros. Melee 1.02 ISO.
 
@@ -142,6 +143,9 @@ For linux, the configuration file is `config.json`. For Windows, the file is
   folder of `.slp` files. If `false`, the `.mp4` files will be left in their
   subfolders in the output folder. If `true`, each subfolder of `.mp4` files
   will be combined into `.mp4` files in the output folder.
+
+- `remove_slps`: can be `true` or `false`; if `true`, remove slp files after
+  they've been converted into mp4s.
 
 ## Performance
 
