@@ -88,16 +88,18 @@ def get_mp4_name(slp):
 def record_files(infiles, outdir, conf):
     file_mappings = [] # [SlpMp4Obj, ...]
     to_combine = []    # [ToCombineObj, ...]
+    individual_mp4s = []
     created_dirs = []
 
     # Determines groupings and output names
     for infile in infiles:
-        # Individual files just become mp4s and don't get combined
+        # Individual files just become mp4s and, if combined, are named `out.mp4`
         if os.path.isfile(infile):
             if not is_slp(infile):
                 continue
             outfile = get_mp4_name(os.path.join(outdir, Path(infile).parts[-1]))
             file_mappings.append(SlpMp4Obj(infile, outfile, conf))
+            individual_mp4s.append(outfile)
 
         # Directories get grouped/combined by level
         elif os.path.isdir(infile):
@@ -132,6 +134,9 @@ def record_files(infiles, outdir, conf):
 
                 final_mp4_name = '-'.join(Path(cur_outdir).parts[idx:]) + '.mp4'
                 to_combine.append(ToCombineObj(cur_combine, os.path.join(outdir, final_mp4_name)))
+
+    if len(individual_mp4s) > 0:
+        to_combine.append(ToCombineObj(individual_mp4s, os.path.join(outdir, 'out.mp4')))
 
     # Records mp4s
     num_processes = get_num_processes(conf)
