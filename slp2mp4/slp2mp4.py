@@ -72,7 +72,8 @@ def get_mp4_name(slp):
 def record_files(infiles, outdir, conf):
     file_mappings = [] # [(slp, mp4, conf), ...]
     to_combine = []    # [([vid1, vid2], out), ...]
-    dirs = []
+    dirs_to_delete = []
+    files_to_delete = []
 
     # Determines groupings and output names
     for infile in infiles:
@@ -99,17 +100,22 @@ def record_files(infiles, outdir, conf):
                     mp4_name = os.path.join(cur_outdir, get_mp4_name(f))
                     file_mappings.append((os.path.join(subdir, f), mp4_name, conf))
                     cur_combine.append(mp4_name)
+
+                    # Adds the slps in this directory to the list of files to be deleted
+                    if Path(infile) == Path('.'):
+                        files_to_delete.append(f)
+
                 if len(cur_combine) == 0:
                     continue
-                dirs.append(cur_outdir)
+                dirs_to_delete.append(cur_outdir)
                 os.makedirs(cur_outdir, exist_ok=True)
                 cur_combine = natsort.natsorted(cur_combine)
-                # Allow for parent name in case of same directory (Path strips .)
-                if Path(infile) == Path('.'):
+
+                # Always give file some kind of meaningful name, at least
+                idx = 1
+                if len(Path(cur_outdir).parts):
                     idx = 0
-                    dirs.append(parent)
-                else:
-                    idx = 1
+
                 final_mp4_name = '-'.join(Path(cur_outdir).parts[idx:]) + '.mp4'
                 to_combine.append((cur_combine, os.path.join(outdir, final_mp4_name)))
 
@@ -125,8 +131,12 @@ def record_files(infiles, outdir, conf):
             combine(files[0], files[1], conf)
 
         # Cleans up intermediate mp4s - done after to prevent premature dir deletion
-        for d in dirs:
+        for d in dirs_to_delete:
             shutil.rmtree(d, ignore_errors=True)
+
+        # Cleans up additional files
+        for d in files_to_delete:
+            os.remove(d)
 
 ###############################################################################
 # Argument parsing
