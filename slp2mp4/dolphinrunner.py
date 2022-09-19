@@ -176,7 +176,7 @@ class DolphinRunner:
 
         for ini_path, opt_dict in ini_settings.items():
             # need these args to ensure Gecko_Enabled options (GALE01.ini) are parsed correctly
-            ini_parser = configparser.ConfigParser(allow_no_value=True, delimiters=('=',))
+            ini_parser = configparser.ConfigParser(allow_no_value=True, delimiters=('=',), strict=False)
 
             ini_parser.optionxform = str
             ini_parser.read(ini_path)
