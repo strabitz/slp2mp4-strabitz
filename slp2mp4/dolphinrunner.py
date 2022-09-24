@@ -1,5 +1,6 @@
 import os, sys, subprocess, time, shutil, uuid, json, configparser
 import glob
+import pathlib
 
 RESOLUTION_DICT = {'480p': '2', '720p': '3', '1080p': '5', '1440p': '6', '2160p': '8'}
 
@@ -151,11 +152,14 @@ class DolphinRunner:
         # it's this for older versions of slippi:
         widescreen_code = '$Widescreen 16:9'
         for fn in [self.paths.user_gale01_ini, self.paths.gale01r2_ini]:
-            with open(fn, 'r') as f:
-                # it's this for newer (since rollback? idk, tell me if this breaks)
-                # Update: it seems to have broken - fixed below
-                if '$Required: Slippi Playback' in f.read():
-                    widescreen_code = '$Optional: Widescreen 16:9'
+            try:
+                with open(fn, 'r') as f:
+                    # it's this for newer (since rollback? idk, tell me if this breaks)
+                    # Update: it seems to have broken - fixed below
+                    if '$Required: Slippi Playback' in f.read():
+                        widescreen_code = '$Optional: Widescreen 16:9'
+            except FileNotFoundError:
+                print(f'{fn} not found - skipping')
 
         # Enable/disable widescreen
         if self.conf.widescreen:
@@ -187,9 +191,9 @@ class DolphinRunner:
                 for opt_tuple in opts:
                     ini_parser.set(section, *opt_tuple)
 
-            ini_fp = open(ini_path, 'w')
-            ini_parser.write(ini_fp)
-            ini_fp.close()
+            pathlib.Path(ini_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(ini_path, 'w') as ini_fp:
+                ini_parser.write(ini_fp)
 
     def prep_user_dir(self):
         # We need to remove the render time file because we read it to figure out when dolphin is done
