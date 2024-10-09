@@ -132,7 +132,7 @@ def record_files(infiles, outdir, conf):
                 if len(Path(cur_outdir).parts):
                     idx = 0
 
-                final_mp4_name = '-'.join(Path(cur_outdir).parts[idx:]) + '.mp4'
+                final_mp4_name = str(subdir) + '.mp4'
                 to_combine.append(ToCombineObj(cur_combine, os.path.join(outdir, final_mp4_name)))
 
     if len(individual_mp4s) > 0:
