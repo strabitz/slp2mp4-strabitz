@@ -6,7 +6,7 @@ import importlib.resources
 
 class Paths:
     def __init__(self, dolphin_dir='', user_dir=''):
-        self._windows = sys.platform == 'win32'
+        self._platform = sys.platform
         self.config_json = importlib.resources.files('data').joinpath('config.json')
         self.dolphin_dir = dolphin_dir
         self.user_dir = user_dir
@@ -18,9 +18,12 @@ class Paths:
     @dolphin_dir.setter
     def dolphin_dir(self, d):
         self._dolphin_dir = d
-        if self._windows:
+        if self._platform == 'win32':
             self.dolphin_bin = os.path.join(self._dolphin_dir, 'Slippi Dolphin.exe')
             self.gale01r2_ini = os.path.join(self._dolphin_dir, 'Sys', 'GameSettings', 'GALE01r2.ini')
+        elif self._platform == 'darwin':
+            self.dolphin_bin = os.path.join(self._dolphin_dir, 'dolphin.app', 'Contents', 'MacOS', 'Slippi Dolphin')
+            self.gale01r2_ini = os.path.join(self._dolphin_dir, 'dolphin.app', 'Contents', 'Resources', 'Sys', 'GameSettings', 'GALE01r2.ini')
         else:
             self.dolphin_bin = os.path.join(self._dolphin_dir, 'Slippi Launcher', 'playback', 'Slippi_Playback-x86_64.AppImage')
             self.gale01r2_ini = os.path.join(self._dolphin_dir, 'Slippi Launcher', 'playback', 'Sys', 'GameSettings', 'GALE01r2.ini')
@@ -39,7 +42,7 @@ class Paths:
         self.user_dump_dir = os.path.join(self._user_dir, 'Dump')
 
     def copy_inis(self):
-        if self._windows:
+        if self._platform == 'win32' or self._platform == 'darwin':
             shutil.copytree(os.path.join(self._dolphin_dir, 'User'), self.user_dir)
         else:
             paths = [pathlib.Path(p).parent for p in [
