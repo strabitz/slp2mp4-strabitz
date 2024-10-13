@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-import os, sys, json, subprocess, time, shutil, uuid, multiprocessing, glob
+import os
+import sys
+import json
+import subprocess
+import time
+import shutil
+import uuid
+import multiprocessing
+import glob
 import argparse
 import tempfile
 from pathlib import Path
@@ -69,7 +77,7 @@ def upload_to_youtube(video_path, metadata_path):
 ###############################################################################
 # Run logic
 ###############################################################################
-def record_file_slp(slp_file, outfile, conf):
+def record_file_slp(slp_file, outfile, conf, youtube_options):
     # Parse file with py-slippi to determine number of frames
     slippi_game = Game(slp_file)
     num_frames = slippi_game.metadata.duration + DURATION_BUFFER
@@ -92,20 +100,20 @@ def record_file_slp(slp_file, outfile, conf):
             print('Created {}'.format(outfile))
 
     # YouTube upload
-    if conf.youtube_upload:
+    if youtube_options and youtube_options['enabled']:
         context_file = os.path.join(os.path.dirname(slp_file), 'context.json')
         if os.path.exists(context_file):
             with open(context_file, 'r') as f:
                 context = json.load(f)
-            title = format_title(conf.youtube_title_template, context)
+            title = format_title(youtube_options['title_template'], context)
         else:
             title = os.path.basename(outfile)
 
         metadata = {
             "title": title,
-            "description": conf.youtube_description,
-            "tags": conf.youtube_tags,
-            "privacyStatus": conf.youtube_privacy
+            "description": youtube_options['description'],
+            "tags": youtube_options['tags'],
+            "privacyStatus": youtube_options['privacy']
         }
         
         with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json') as tmp:
@@ -136,7 +144,7 @@ def is_slp(slp):
 def get_mp4_name(slp):
     return '.'.join(os.path.splitext(slp)[:-1]) + '.mp4'
 
-def record_files(infiles, outdir, conf):
+def record_files(infiles, outdir, conf, youtube_options):
     file_mappings = [] # [SlpMp4Obj, ...]
     to_combine = []    # [ToCombineObj, ...]
     individual_mp4s = []
@@ -186,11 +194,6 @@ def record_files(infiles, outdir, conf):
                     os.makedirs(cur_outdir)
                 cur_combine = natsort.natsorted(cur_combine)
 
-                # Always give file some kind of meaningful name, at least
-                idx = 1
-                if len(Path(cur_outdir).parts):
-                    idx = 0
-
                 final_mp4_name = Path(subdir).name + '.mp4'
                 to_combine.append(ToCombineObj(cur_combine, os.path.join(outdir, final_mp4_name)))
 
@@ -200,7 +203,7 @@ def record_files(infiles, outdir, conf):
     # Records mp4s
     num_processes = get_num_processes(conf)
     pool = multiprocessing.Pool(processes=num_processes)
-    pool.starmap(record_file_slp, file_mappings)
+    pool.starmap(record_file_slp, [(slp, out, conf, youtube_options) for slp, out, conf in file_mappings])
     pool.close()
 
     # Combines mp4s
@@ -229,16 +232,6 @@ def config_script(_=None):
             val = input()
             if val != '':
                 data[k] = attempt_data_conversion(val)
-        
-        # YouTube options
-        print("\nYouTube Upload Options:")
-        data['youtube_upload'] = input("Enable YouTube upload? (true/false): ").lower() == 'true'
-        if data['youtube_upload']:
-            data['youtube_title_template'] = input("Enter title template (e.g. '{tournament} | {bracket} | {players}'): ")
-            data['youtube_description'] = input("Enter video description: ")
-            data['youtube_tags'] = input("Enter tags (comma-separated): ").split(',')
-            data['youtube_privacy'] = input("Enter privacy status (public, unlisted, private): ")
-
         f.seek(0)
         json.dump(data, f, indent=4)
         f.truncate()
@@ -252,7 +245,16 @@ def run(args):
         except RuntimeError as e:
             print(e, file=sys.stderr)
             config_script()
-    record_files(args.path, args.output_directory, conf)
+    
+    youtube_options = {
+        'enabled': args.youtube,
+        'title_template': args.youtube_title,
+        'description': args.youtube_description,
+        'tags': args.youtube_tags.split(',') if args.youtube_tags else [],
+        'privacy': args.youtube_privacy
+    }
+    
+    record_files(args.path, args.output_directory, conf, youtube_options)
 
 # Parser configuration
 def attempt_data_conversion(val):
@@ -301,6 +303,11 @@ run_parser.add_argument(
     nargs='+',
     type=parser_is_file_or_dir,
 )
+run_parser.add_argument('--youtube', action='store_true', help='Enable YouTube upload')
+run_parser.add_argument('--youtube-title', help='YouTube video title template')
+run_parser.add_argument('--youtube-description', help='YouTube video description')
+run_parser.add_argument('--youtube-tags', help='YouTube video tags (comma-separated)')
+run_parser.add_argument('--youtube-privacy', choices=['public', 'unlisted', 'private'], default='unlisted', help='YouTube video privacy setting')
 
 def main():
     # Parse arguments
