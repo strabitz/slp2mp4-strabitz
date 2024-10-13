@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SLP to MP4 Converter - Configuration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        label {
+            display: inline-block;
+            width: 150px;
+            margin-bottom: 10px;
+        }
+        input, select {
+            width: 300px;
+        }
+        button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Configuration</h1>
+    <div>
+        <label for="melee_iso">Melee ISO:</label>
+        <input type="text" id="melee_iso">
+    </div>
+    <div>
+        <label for="dolphin_dir">Dolphin Directory:</label>
+        <input type="text" id="dolphin_dir">
+    </div>
+    <div>
+        <label for="ffmpeg">ffmpeg:</label>
+        <input type="text" id="ffmpeg">
+    </div>
+    <div>
+        <label for="resolution">Resolution:</label>
+        <select id="resolution">
+            <option value="480p">480p</option>
+            <option value="720p">720p</option>
+            <option value="1080p">1080p</option>
+            <option value="1440p">1440p</option>
+            <option value="2160p">2160p</option>
+        </select>
+    </div>
+    <div>
+        <label for="video_backend">Video Backend:</label>
+        <select id="video_backend">
+            <option value="OGL">OpenGL</option>
+            <option value="D3D">Direct3D</option>
+        </select>
+    </div>
+    <div>
+        <label for="widescreen">Widescreen:</label>
+        <input type="checkbox" id="widescreen">
+    </div>
+    <div>
+        <label for="bitrateKbps">Bitrate (Kbps):</label>
+        <input type="number" id="bitrateKbps">
+    </div>
+    <div>
+        <label for="parallel_games">Parallel Games:</label>
+        <input type="text" id="parallel_games">
+    </div>
+    <div>
+        <label for="remove_short">Remove Short:</label>
+        <input type="checkbox" id="remove_short">
+    </div>
+    <div>
+        <label for="combine">Combine:</label>
+        <input type="checkbox" id="combine">
+    </div>
+    <div>
+        <label for="remove_slps">Remove SLPs:</label>
+        <input type="checkbox" id="remove_slps">
+    </div>
+    <button id="saveBtn">Save Configuration</button>
+
+    <script src="config_renderer.js"></script>
+</body>
+</html>

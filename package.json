@@ -1,0 +1,38 @@
+{
+  "name": "slp2mp4-strabitz",
+  "version": "1.0.0",
+  "description": "`slp2mp4` converts [Project Slippi][slippi] replay files for [Super Smash Bros. Melee][ssbm] to mp4 videos.",
+  "main": "main.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.yourcompany.slp2mp4converter",
+    "productName": "SLP to MP4 Converter",
+    "files": [
+      "**/*",
+      "!slp2mp4/data/config.json"
+    ],
+    "extraResources": [
+      {
+        "from": "slp2mp4/data/config.json",
+        "to": "config.json"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^x.x.x",
+    "electron-builder": "^25.1.8"
+  }
+}

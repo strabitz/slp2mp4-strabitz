@@ -4,6 +4,7 @@ import argparse
 import tempfile
 from pathlib import Path
 from collections import namedtuple
+import zipfile
 
 from slippi import Game
 import psutil
@@ -37,6 +38,14 @@ def safe_remove_file(f):
 
 SlpMp4Obj = namedtuple('SlpMp4Obj', ['slp_file', 'outfile', 'conf'])
 ToCombineObj = namedtuple('ToCombineObj', ['vids', 'outname'])
+
+def extract_zip(zip_path, extract_to):
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_to)
+    return extract_to
+
+def is_zip(file_path):
+    return file_path.lower().endswith('.zip')
 
 ###############################################################################
 # Run logic
@@ -93,6 +102,14 @@ def record_files(infiles, outdir, conf):
 
     # Determines groupings and output names
     for infile in infiles:
+        # Handle zip files
+        if is_zip(infile):
+            zip_name = os.path.splitext(os.path.basename(infile))[0]
+            extract_dir = os.path.join(os.path.dirname(infile), zip_name)
+            extracted_path = extract_zip(infile, extract_dir)
+            infile = extracted_path
+            created_dirs.append(extract_dir)
+
         # Individual files just become mp4s and, if combined, are named `out.mp4`
         if os.path.isfile(infile):
             if not is_slp(infile):
@@ -132,7 +149,7 @@ def record_files(infiles, outdir, conf):
                 if len(Path(cur_outdir).parts):
                     idx = 0
 
-                final_mp4_name = str(subdir) + '.mp4'
+                final_mp4_name = Path(subdir).name + '.mp4'
                 to_combine.append(ToCombineObj(cur_combine, os.path.join(outdir, final_mp4_name)))
 
     if len(individual_mp4s) > 0:
