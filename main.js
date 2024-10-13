@@ -76,7 +76,7 @@ ipcMain.on('select-output-directory', async (event) => {
   }
 });
 
-ipcMain.on('start-conversion', (event, { inputDirectory, outputDirectory }) => {
+ipcMain.on('start-conversion', (event, { inputDirectory, outputDirectory, youtubeOptions }) => {
   event.reply('conversion-started');
 
   const args = [
@@ -86,9 +86,21 @@ ipcMain.on('start-conversion', (event, { inputDirectory, outputDirectory }) => {
     inputDirectory,
   ];
 
+  if (youtubeOptions.enabled) {
+    args.push('--youtube');
+    args.push('--youtube-title', youtubeOptions.titleTemplate);
+    args.push('--youtube-description', youtubeOptions.description);
+    args.push('--youtube-tags', youtubeOptions.tags.join(','));
+    args.push('--youtube-privacy', youtubeOptions.privacy);
+  }
+
   const pythonProcess = app.isPackaged
     ? execFile(pythonExecutablePath, args)
     : spawn('python', [path.join(__dirname, 'slp2mp4', 'slp2mp4.py'), ...args]);
+
+  pythonProcess.stdout.on('data', (data) => {
+    event.reply('conversion-progress', data.toString());
+  });
 
   pythonProcess.stderr.on('data', (data) => {
     event.reply('conversion-error', data.toString());

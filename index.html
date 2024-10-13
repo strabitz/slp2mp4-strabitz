@@ -14,6 +14,11 @@
             margin-top: 20px;
             white-space: pre-wrap;
         }
+        #youtubeOptions {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
     </style>
 </head>
 <body>
@@ -22,6 +27,22 @@
     <div id="inputPath"></div>
     <button id="selectOutputBtn">Select Output Directory</button>
     <div id="outputPath"></div>
+    
+    <div id="youtubeOptions">
+        <h2>YouTube Upload Options</h2>
+        <input type="checkbox" id="enableYoutube"> Enable YouTube Upload
+        <div id="youtubeSettings" style="display: none;">
+            <input type="text" id="youtubeTitleTemplate" placeholder="Title Template">
+            <textarea id="youtubeDescription" placeholder="Video Description"></textarea>
+            <input type="text" id="youtubeTags" placeholder="Tags (comma-separated)">
+            <select id="youtubePrivacy">
+                <option value="public">Public</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="private">Private</option>
+            </select>
+        </div>
+    </div>
+    
     <button id="startConversionBtn">Start Conversion</button>
     <button id="openConfigBtn">Open Config</button>
     <div id="progressArea"></div>

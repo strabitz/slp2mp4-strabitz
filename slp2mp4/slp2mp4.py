@@ -9,6 +9,7 @@ import zipfile
 from slippi import Game
 import psutil
 import natsort
+from youtube_uploader_selenium import YouTubeUploader
 
 from config import Config
 from dolphinrunner import DolphinRunner
@@ -47,10 +48,27 @@ def extract_zip(zip_path, extract_to):
 def is_zip(file_path):
     return file_path.lower().endswith('.zip')
 
+def format_title(title_template, context):
+    tournament = context['startgg']['tournament']['name']
+    bracket = context['startgg']['event']['name']
+    players = " vs ".join([slot['displayNames'][0] for slot in context['scores'][0]['slots']])
+    return title_template.format(tournament=tournament, bracket=bracket, players=players)
+
+###############################################################################
+# YouTube upload
+###############################################################################
+def upload_to_youtube(video_path, metadata_path):
+    uploader = YouTubeUploader(video_path, metadata_path)
+    was_video_uploaded, video_id = uploader.upload()
+    if was_video_uploaded:
+        print(f"Video uploaded successfully. Video ID: {video_id}")
+    else:
+        print("Failed to upload video.")
+    return was_video_uploaded, video_id
+
 ###############################################################################
 # Run logic
 ###############################################################################
-# Evaluate whether file should be run. The open in dolphin and combine video and audio with ffmpeg.
 def record_file_slp(slp_file, outfile, conf):
     # Parse file with py-slippi to determine number of frames
     slippi_game = Game(slp_file)
@@ -72,6 +90,30 @@ def record_file_slp(slp_file, outfile, conf):
                 safe_remove_file(slp_file)
 
             print('Created {}'.format(outfile))
+
+    # YouTube upload
+    if conf.youtube_upload:
+        context_file = os.path.join(os.path.dirname(slp_file), 'context.json')
+        if os.path.exists(context_file):
+            with open(context_file, 'r') as f:
+                context = json.load(f)
+            title = format_title(conf.youtube_title_template, context)
+        else:
+            title = os.path.basename(outfile)
+
+        metadata = {
+            "title": title,
+            "description": conf.youtube_description,
+            "tags": conf.youtube_tags,
+            "privacyStatus": conf.youtube_privacy
+        }
+        
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.json') as tmp:
+            json.dump(metadata, tmp)
+            metadata_path = tmp.name
+
+        upload_to_youtube(outfile, metadata_path)
+        os.unlink(metadata_path)
 
 def combine(mp4s, out, conf):
     # Creates concat file
@@ -178,8 +220,6 @@ def record_files(infiles, outdir, conf):
 # Argument parsing
 ###############################################################################
 def config_script(_=None):
-    # TODO: Read slippi's config script to get ISO location?
-    # TODO: Tab completion
     print('Entering configuration script...')
     conf = Config(False)
     with open(conf.paths.config_json, 'r+', encoding='utf-8') as f:
@@ -189,6 +229,16 @@ def config_script(_=None):
             val = input()
             if val != '':
                 data[k] = attempt_data_conversion(val)
+        
+        # YouTube options
+        print("\nYouTube Upload Options:")
+        data['youtube_upload'] = input("Enable YouTube upload? (true/false): ").lower() == 'true'
+        if data['youtube_upload']:
+            data['youtube_title_template'] = input("Enter title template (e.g. '{tournament} | {bracket} | {players}'): ")
+            data['youtube_description'] = input("Enter video description: ")
+            data['youtube_tags'] = input("Enter tags (comma-separated): ").split(',')
+            data['youtube_privacy'] = input("Enter privacy status (public, unlisted, private): ")
+
         f.seek(0)
         json.dump(data, f, indent=4)
         f.truncate()
@@ -224,7 +274,7 @@ def parser_is_file_or_dir(path):
 
 parser = argparse.ArgumentParser(
     prog='slp2mp4',
-    description='Convert slippi replay files for Super Smash Bros Melee to videos',
+    description='Convert slippi replay files for Super Smash Bros Melee to videos and optionally upload to YouTube',
 )
 subparser = parser.add_subparsers(
     title='mode',
@@ -235,7 +285,7 @@ subparser = parser.add_subparsers(
 config_parser = subparser.add_parser('config', help='Run configuration helper')
 config_parser.set_defaults(func=config_script)
 
-run_parser = subparser.add_parser('run', help='Convert slps to mp4s')
+run_parser = subparser.add_parser('run', help='Convert slps to mp4s and optionally upload to YouTube')
 run_parser.set_defaults(func=run)
 run_parser.add_argument(
     '-o', '--output_directory',
